@@ -122,8 +122,8 @@ class AckInProject::Search
       pipe.each do |line|
         case line
         when /^\s*$/
-          section_end()
-        when /^\e\[\d+;\d+m(.*)\e\[0m/
+          section_end
+        when /^\e\[\d+(?:;\d+)?m(.*)\e\[0m/
           section_start($1)
         when /^(\d+):(.*)$/
           content_line($1, $2)
@@ -134,7 +134,7 @@ class AckInProject::Search
         end
         $stdout.flush
       end
-      section_end()
+      section_end
     end
   end
 end
