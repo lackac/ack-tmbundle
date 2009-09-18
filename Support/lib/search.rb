@@ -80,7 +80,7 @@ class AckInProject::Search
     # TODO: bail if the search term is empty
     result = plist['result']
     
-    options = %w(--group --color --flush)
+    options = %w(--group --color --flush --nopager)
     options << '-w' if result['matchWholeWords'] == 1
     options << '-i' if result['ignoreCase'] == 1
     options << '-Q' if result['literalMatch'] == 1
@@ -93,11 +93,31 @@ class AckInProject::Search
 
     %{cd #{e_sh search_directory}; #{e_sh ack} #{options.join(' ')} #{e_sh result['returnArgument']}}
   end
-  
-  def search
+
+  def find_rc_file
     # tell ack about potential .ackrc files in the project directory
-    ENV['ACKRC'] = File.join(project_directory, '.ackrc')
-    
+    ackrc_home = File.join(ENV['HOME'], '.ackrc')
+    if File.exists?(ackrc = File.join(project_directory, '.ackrc'))
+      if File.exists?(ackrc_home)
+        ackrc_merged = "#{ackrc}_merged"
+        File.open(ackrc_merged, "w") do |f|
+          f.puts '# ~/.ackrc'
+          f.write(File.read(ackrc_home) + "\n")
+          f.puts '# project .ackrc'
+          f.write(File.read(ackrc) + "\n")
+        end
+        ackrc_merged
+      else
+        ackrc
+      end
+    else
+      ackrc_home
+    end
+  end
+
+  def search
+    ENV['ACKRC'] = find_rc_file
+
     IO.popen(prepare_search) do |pipe|
       pipe.each do |line|
         case line
